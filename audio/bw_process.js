@@ -25,7 +25,12 @@ var BWP = {
     cutoff: null,
     resonance: null,
     volume: null,
-    bypass: false
+    bypass: false,
+
+    //DEBUG
+
+    min: 0,
+    max: 0
 };
 
 BWP.process = function (data) {
@@ -37,8 +42,8 @@ BWP.process = function (data) {
     // discuss at: http://phpjs.org/functions/tanh    // +   original by: Onno Marsman
     // *     example 1: tanh(5.4251848798444815);
     // *     returns 1: 0.9999612058841574
-    return (Math.exp(arg) - Math.exp(-arg)) / (Math.exp(arg) + Math.exp(-arg));
-    //return (Math.exp(2 * arg) - 1) / (Math.exp(2 * arg) + 1)
+    //return (Math.exp(arg) - Math.exp(-arg)) / (Math.exp(arg) + Math.exp(-arg));
+    return (Math.exp(2 * arg) - 1) / (Math.exp(2 * arg) + 1)
 
 }
 
@@ -67,6 +72,17 @@ BWP.process = function (data) {
 
                         var a = this.strings[note][this.stringpos[note]];
                         var b = tanh(a);
+                        
+                        // DEBUG
+                        if (a < this.min) {
+                            this.min = a;
+                            console.log ("found a new min in a", this.min);
+                        }
+                        if (a > this.max) {
+                            this.max = a;
+                            console.log ("found a new max in a", this.max);
+                        }
+
                         this.strings[note][this.stringpos[note]] = b * 0.99;
                         sample += this.strings[note][this.stringpos[note]];
                     }
@@ -77,6 +93,18 @@ BWP.process = function (data) {
                     sample -= this.hplast;
 
                     this.lpval += (sample - this.lplast) * this.fcutoff * (1.0-tanh(this.lplast)*tanh(this.lplast)*0.9);
+
+                    // DEBUG
+                    if (this.lplast < this.min) {
+                        this.min = this.lplast;
+                        console.log ("found a new this.min in lplast ", this.min);
+                    }
+                    if (this.lplast > this.max) {
+                        this.max = this.lplast;
+                        console.log ("found a new max in lplast", this.max);
+                    }
+
+
                     this.lplast += this.lpval;
                     this.lpval *= this.freso;
                     sample = this.lplast;
@@ -97,12 +125,23 @@ BWP.process = function (data) {
 
                     // TODO Check this! It does it in-place!
                     data[i] = tanh( sample ) * (this.volume / 127);
+
+                    // DEBUG
+                    if (sample < this.min) {
+                        this.min = sample;
+                        console.log ("found a new this.min in sample", this.min);
+                    }
+                    if (sample > this.max) {
+                        this.max = sample;
+                        console.log ("found a new max in sample", this.max);
+                    }
+
             }
-            console.log ("Processed " + data.length + " samples");
+            //console.log ("Processed " + data.length + " samples");
         }
 
         else {
-            console.log ("Bypassed " + data.length + " samples");
+            //console.log ("Bypassed " + data.length + " samples");
         }
         
         /*for (var k = 0; k < 10 ; k++) {
