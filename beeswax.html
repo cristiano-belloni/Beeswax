@@ -44,12 +44,18 @@
             mulArgs.multipleImages.push ({ID: notes_array[i] + "_loader", imageNames : imageResources});
         }
         
-        // Load colored lights
+        // Load octave lights
         
         for (i = 0; i < colors_array.length; i += 1) {
             imageResources = ["Lights/" + colors_array[i] + "_inactive.png", "Lights/" + colors_array[i] + "_active.png"];
             mulArgs.multipleImages.push ({ID: colors_array[i] + "_loader", imageNames : imageResources});
         }
+
+        // Load bypass / play button
+        imageResources = ["PlaybackControls/play_inactive.png", "PlaybackControls/play_active.png"];
+        mulArgs.multipleImages.push ({ID: "play_loader", imageNames : imageResources});
+        imageResources = ["PlaybackControls/stop_inactive.png", "PlaybackControls/stop_active.png"];
+        mulArgs.multipleImages.push ({ID: "stop_loader", imageNames : imageResources});
 
         // Load bg
         mulArgs.multipleImages.push ({ID: "background_loader", imageNames : ["Beeswax_deck.png"]});
@@ -69,7 +75,8 @@
                 Red: "",
                 Yellow: "",
                 Green: ""
-            };
+            }
+            bpButtons = {};
             
             
             /* BACKGROUND */
@@ -163,14 +170,57 @@
                 ui.addElement(window.lights[colors_array[i]], {zIndex: 3, completeRepaint: true});
             }
 
-            // The lights' connect chain will cascade no side effects, because
-            // side effects make the button unclickable and trigger another
+            // The lights' connect chain will not cascade callbacks, because
+            // callbacks make the button unclickable and trigger another
             // visualization. So cascade is set to false.
             ui.connectSlots ("Green", "buttonvalue", "Red", "buttonvalue", {callback: function (value) {return 0;}, cascade: false});
             ui.connectSlots ("Red", "buttonvalue", "Yellow", "buttonvalue", {callback: function (value) {return 0;}, cascade: false});
             ui.connectSlots ("Yellow", "buttonvalue", "Green", "buttonvalue", {callback: function (value) {return 0;}, cascade: false});
 
+            // Start with the central octave.
             window.lights['Yellow'].setValue('buttonvalue', 1);
+
+            // BYPASS / PLAY BUTTONS
+
+            var bpCallback = function ()  {
+                var that = this;
+                return function (slot, value, elName) {
+                    if (value === 1) {
+                        console.log ("Stopping the synth");
+                    }
+                    else if (value === 0) {
+                        console.log ("Starting the synth");
+                    }
+                    else {
+                        // throw
+                        console.log ("Shouldn't be here!!");
+                    }
+                }
+            }
+
+            var bpArgs = {
+                top: 305,
+                preserveBg: true,
+                isClickable: true
+            };
+
+            bpArgs.ID = "PlayButton";
+            bpArgs.left = 820;
+            bpArgs.imagesArray = loaders["play_loader"].images;
+            window.bpButtons['play'] = new Button(bpArgs);
+            bpArgs.ID = "StopButton";
+            bpArgs.left = 735;
+            bpArgs.imagesArray = loaders["stop_loader"].images;
+            bpArgs.onValueSet = bpCallback();
+            window.bpButtons['stop'] = new Button(bpArgs);
+
+            ui.addElement(window.bpButtons['play'], {zIndex: 3});
+            ui.addElement(window.bpButtons['stop'], {zIndex: 3});
+
+            // Cascading here; since the buttons are mutually excusive, we will
+            // need only a callback function.
+            ui.connectSlots ("PlayButton", "buttonvalue", "StopButton", "buttonvalue", {callback: function (value) {return 1-value;}});
+            ui.connectSlots ("StopButton", "buttonvalue", "PlayButton", "buttonvalue", {callback: function (value) {return 1-value;}});
 
             /*keyArgs.onValueSet = function () {
                 var that = this;
