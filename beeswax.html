@@ -59,15 +59,17 @@
         function afterLoading (loaders) {
       
             var key_initial_offset = 68,
-                light_initial_offset = 162,
-                background,
-                keys = [],
-                knob = [],
-                lights = {
-                    Red: "",
-                    Yellow: "",
-                    Green: ""
-                };
+                light_initial_offset = 162;
+
+            //TODO window will become this or BEESWAX
+            background = undefined,
+            keys = [],
+            knob = [],
+            lights = {
+                Red: "",
+                Yellow: "",
+                Green: ""
+            };
             
             
             /* BACKGROUND */
@@ -79,9 +81,10 @@
                 image: loaders["background_loader"].images[0],
                 preserveBg: true
                 }
-            background = new Background (backgroundArgs);
-            
-            ui.addElement(background, {zIndex: 1});
+
+            // TODO window will become this or Beeswax
+            window.background = new Background (backgroundArgs);
+            ui.addElement(window.background, {zIndex: 1});
 
             /* KEYS */
 
@@ -115,17 +118,35 @@
                 keyArgs.ID = i;
                 keyArgs.imagesArray = loaders[notes_array[i] + "_loader"].images,
                 keyArgs.left = key_initial_offset + i * 73;
-                keys[i] = new Button(keyArgs);
-                ui.addElement(keys[i], {zIndex: 5});
+                // TODO window will become this or Beeswax
+                window.keys[i] = new Button(keyArgs);
+                ui.addElement(window.keys[i], {zIndex: 5});
             }
             
             // LIGHTS
+
+            var lightCallback = function ()  {
+                var that = this;
+                return function (slot, value, elName) {
+                    // When a button is clicked, it is set to unClickable
+                    // (at least one button should be always lit).
+                    for (var i = 0; i < colors_array.length; i += 1) {
+                        if (colors_array[i]===elName) {
+                            that.lights[colors_array[i]].setClickable(false);
+                        }
+                        else {
+                            that.lights[colors_array[i]].setClickable(true);
+                        }
+                    }
+                }
+            }
             
             var lightArgs = {
                 left:  0,
                 top: 252,
                 preserveBg: true,
                 isClickable: true,
+                onValueSet: lightCallback()
             };
             
             for (var i = 0; i < colors_array.length; i += 1) {
@@ -136,11 +157,21 @@
                 lightArgs.ROITop = 78 + lightArgs.top;
                 lightArgs.ROIWidth = 22;
                 lightArgs.ROIHeight = 22;
-                lights[colors_array[i]] = new Button(lightArgs);
+                // TODO window will become this or Beeswax
+                window.lights[colors_array[i]] = new Button(lightArgs);
                 // Lights overlap at the same z-index: they need a complete repaint
-                ui.addElement(lights[colors_array[i]], {zIndex: 3, completeRepaint: true});
+                ui.addElement(window.lights[colors_array[i]], {zIndex: 3, completeRepaint: true});
             }
-            
+
+            // The lights' connect chain will cascade no side effects, because
+            // side effects make the button unclickable and trigger another
+            // visualization. So cascade is set to false.
+            ui.connectSlots ("Green", "buttonvalue", "Red", "buttonvalue", {callback: function (value) {return 0;}, cascade: false});
+            ui.connectSlots ("Red", "buttonvalue", "Yellow", "buttonvalue", {callback: function (value) {return 0;}, cascade: false});
+            ui.connectSlots ("Yellow", "buttonvalue", "Green", "buttonvalue", {callback: function (value) {return 0;}, cascade: false});
+
+            window.lights['Yellow'].setValue('buttonvalue', 1);
+
             /*keyArgs.onValueSet = function () {
                 var that = this;
                 return function (slot, value) {
