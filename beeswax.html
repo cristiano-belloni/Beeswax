@@ -39,14 +39,14 @@
 
         // Load keys
 
-        for (i = 0; i < notes_array.length; i += 1) {
+        for (var i = 0; i < notes_array.length; i += 1) {
             imageResources = ["Keys/" + notes_array[i] + "_inactive.png", "Keys/" + notes_array[i] + "_active.png"];
             mulArgs.multipleImages.push ({ID: notes_array[i] + "_loader", imageNames : imageResources});
         }
         
         // Load octave lights
         
-        for (i = 0; i < colors_array.length; i += 1) {
+        for (var i = 0; i < colors_array.length; i += 1) {
             imageResources = ["Lights/" + colors_array[i] + "_inactive.png", "Lights/" + colors_array[i] + "_active.png"];
             mulArgs.multipleImages.push ({ID: colors_array[i] + "_loader", imageNames : imageResources});
         }
@@ -65,11 +65,14 @@
         function afterLoading (loaders) {
       
             var key_initial_offset = 68,
-                light_initial_offset = 162;
+                light_initial_offset = 162,
+                octaves = 3;
 
             //TODO window will become this or BEESWAX
             background = undefined,
-            keys = [],
+            keys = {0:[],
+                    1:[],
+                    2:[]},
             knob = [],
             lights = {
                 Red: "",
@@ -86,7 +89,7 @@
                 top: 0,
                 left: 0,
                 image: loaders["background_loader"].images[0],
-                preserveBg: true
+                preserveBg: false
                 }
 
             // TODO window will become this or Beeswax
@@ -99,7 +102,7 @@
                 /*ID: "note",*/
                 left:  0,
                 top: 405,
-                preserveBg: true,
+                preserveBg: false,
                 isClickable: true
             };
 
@@ -121,13 +124,15 @@
                 };
             }();
 
-            for (var i = 0; i < notes_array.length; i += 1) {
+            for (var i = 0; i < notes_array.length * octaves; i += 1) {
                 keyArgs.ID = i;
-                keyArgs.imagesArray = loaders[notes_array[i] + "_loader"].images,
-                keyArgs.left = key_initial_offset + i * 73;
+                var note = i % notes_array.length;
+                keyArgs.imagesArray = loaders[notes_array[note] + "_loader"].images,
+                keyArgs.left = key_initial_offset + note * 73;
+                var oct = Math.floor (i / notes_array.length);
                 // TODO window will become this or Beeswax
-                window.keys[i] = new Button(keyArgs);
-                ui.addElement(window.keys[i], {zIndex: 5});
+                window.keys[oct][note] = new Button(keyArgs);
+                ui.addElement(window.keys[oct][note], {zIndex: 5, completeRepaint: true});
             }
             
             // LIGHTS
@@ -145,13 +150,38 @@
                             that.lights[colors_array[i]].setClickable(true);
                         }
                     }
+                    var oct, octave, id;
+                    // Visualize / hide the right octave
+                    if (elName === "Red") {
+                        oct = 0;
+                    }
+                    if (elName === "Yellow") {
+                        oct = 1;
+                    }
+                    if (elName === "Green") {
+                        oct = 2;
+                    }
+                    for (octave in window.keys) {
+                        if (octave == oct) {
+                            for (i = 0; i < notes_array.length; i += 1) {
+                                id = window.keys[octave][i].getID();
+                                ui.setVisible(id, true);
+                            }
+                        }
+                        else {
+                            for (i = 0; i < notes_array.length; i += 1) {
+                                id = window.keys[octave][i].getID();
+                                ui.setVisible(id, false);
+                            }
+                        }
+                    }
                 }
             }
-            
+    
             var lightArgs = {
                 left:  0,
                 top: 252,
-                preserveBg: true,
+                preserveBg: false,
                 isClickable: true,
                 onValueSet: lightCallback()
             };
@@ -200,7 +230,7 @@
 
             var bpArgs = {
                 top: 305,
-                preserveBg: true,
+                preserveBg: false,
                 isClickable: true
             };
 
@@ -214,8 +244,8 @@
             bpArgs.onValueSet = bpCallback();
             window.bpButtons['stop'] = new Button(bpArgs);
 
-            ui.addElement(window.bpButtons['play'], {zIndex: 3});
-            ui.addElement(window.bpButtons['stop'], {zIndex: 3});
+            ui.addElement(window.bpButtons['play'], {zIndex: 3, completeRepaint: true});
+            ui.addElement(window.bpButtons['stop'], {zIndex: 3, completeRepaint: true});
 
             // Cascading here; since the buttons are mutually excusive, we will
             // need only a callback function.
@@ -272,11 +302,12 @@
                 knobArgs.left = i * 200;
                 knob[i] = new RotKnob(knobArgs);
                 ui.addElement(knob[i]);
-            }
+            }*/
 
             //debugger;
-            var ADBeesWax = new AudioDataBeeswax();
-            ADBeesWax.init({sampleRate: 44100}); */
+            //var ADBeesWax = new AudioDataBeeswax();
+            //ADBeesWax.init({sampleRate: 44100});
+            //ADBeesWax.setBypass (true);
 
             ui.refresh();
 
