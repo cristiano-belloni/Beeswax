@@ -57,6 +57,9 @@
         imageResources = ["PlaybackControls/stop_inactive.png", "PlaybackControls/stop_active.png"];
         mulArgs.multipleImages.push ({ID: "stop_loader", imageNames : imageResources});
 
+        // Load knob rotary part
+        mulArgs.multipleImages.push ({ID: "knob_loader", imageNames : ["Knob/rotary_part.png"]});
+
         // Load bg
         mulArgs.multipleImages.push ({ID: "background_loader", imageNames : ["Beeswax_deck.png"]});
                      
@@ -65,7 +68,11 @@
         function afterLoading (loaders) {
       
             var key_initial_offset = 68,
-                light_initial_offset = 162,
+                key_distance = 73,
+                light_distance = 73,
+                light_initial_offset = 139,
+                lightROI_offset = 95,
+                lightROI_width = 22,
                 octaves = 3;
 
             //TODO window will become this or BEESWAX
@@ -128,7 +135,7 @@
                 keyArgs.ID = i;
                 var note = i % notes_array.length;
                 keyArgs.imagesArray = loaders[notes_array[note] + "_loader"].images,
-                keyArgs.left = key_initial_offset + note * 73;
+                keyArgs.left = key_initial_offset + note * key_distance;
                 var oct = Math.floor (i / notes_array.length);
                 // TODO window will become this or Beeswax
                 window.keys[oct][note] = new Button(keyArgs);
@@ -180,7 +187,7 @@
     
             var lightArgs = {
                 left:  0,
-                top: 252,
+                top: 236,
                 preserveBg: false,
                 isClickable: true,
                 onValueSet: lightCallback()
@@ -189,11 +196,11 @@
             for (var i = 0; i < colors_array.length; i += 1) {
                 lightArgs.ID = colors_array[i];
                 lightArgs.imagesArray = loaders[colors_array[i] + "_loader"].images,
-                lightArgs.left = light_initial_offset + i * 72;
-                lightArgs.ROILeft = 74 + lightArgs.left;
-                lightArgs.ROITop = 78 + lightArgs.top;
-                lightArgs.ROIWidth = 22;
-                lightArgs.ROIHeight = 22;
+                lightArgs.left = light_initial_offset + i * light_distance;
+                lightArgs.ROILeft = lightROI_offset + lightArgs.left;
+                lightArgs.ROITop = lightROI_offset + lightArgs.top;
+                lightArgs.ROIWidth = lightROI_width;
+                lightArgs.ROIHeight = lightROI_width;
                 // TODO window will become this or Beeswax
                 window.lights[colors_array[i]] = new Button(lightArgs);
                 // Lights overlap at the same z-index: they need a complete repaint
@@ -252,34 +259,40 @@
             ui.connectSlots ("PlayButton", "buttonvalue", "StopButton", "buttonvalue", {callback: function (value) {return 1-value;}});
             ui.connectSlots ("StopButton", "buttonvalue", "PlayButton", "buttonvalue", {callback: function (value) {return 1-value;}});
 
-            /*keyArgs.onValueSet = function () {
-                var that = this;
-                return function (slot, value) {
-                    if (value === 0) {
-                        ADBeesWax.setBypass (false);
-                        console.log ("Setting bypass to false");
-                    }
-                    else if (value === 1) {
-                        ADBeesWax.setBypass (true);
-                        console.log ("Setting bypass to true");
-                    }
-                };
-            }();*/
+            // Start with bypass = off
+            window.bpButtons['play'].setValue('buttonvalue', 1);
 
-            /*buttonArgs.ID = "bypass";
-            buttonArgs.left = 500;
-            var bypassButton = new Button(buttonArgs);
-            ui.addElement(bypassButton);*/
 
             /* KNOBS */
 
-            /*var knob_names  = ["Cutoff","Resonance","Feedback","Volume"];
+            var knob_names  = ["Cutoff","Resonance","Feedback","Volume"];
+
+            
+            var  knob_names = [
+                {
+                    ID: "Resonance",
+                    top: 63,
+                    left: 73
+                },
+                {
+                    ID: "Feedback",
+                    top: 64,
+                    left: 306
+                },
+                {
+                    ID: "Cutoff",
+                    top: 63,
+                    left: 540
+                },
+                {
+                    ID: "Volume",
+                    top: 64,
+                    left: 773
+                }
+            ];
 
             var knobArgs = {
-                //ID:
-                top: 200,
-                left: 0,
-                image : loaders["knob_img_loader"].images[0],
+                image : loaders["knob_loader"].images[0],
                 sensivity : 5000,
                 isClickable: true
             };
@@ -292,17 +305,18 @@
                     var interpolated_value = Math.round(value * 127);
                     var functionName = "set" + ID;
                     console.log ("Calling ADBeesWax[" + functionName + "] with value " + value + "-->" + interpolated_value);
-                    ADBeesWax[functionName](interpolated_value);
+                    //ADBeesWax[functionName](interpolated_value);
                     
                 };
             }();
 
             for (var i = 0; i < knob_names.length; i ++) {
-                knobArgs.ID = knob_names[i];
-                knobArgs.left = i * 200;
+                knobArgs.ID = knob_names[i].ID;
+                knobArgs.top = knob_names[i].top;
+                knobArgs.left = knob_names[i].left;
                 knob[i] = new RotKnob(knobArgs);
-                ui.addElement(knob[i]);
-            }*/
+                ui.addElement(knob[i],  {zIndex: 10});
+            }
 
             //debugger;
             //var ADBeesWax = new AudioDataBeeswax();
